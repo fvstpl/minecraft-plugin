@@ -69,10 +69,11 @@ public class ItemShop extends JavaPlugin {
                 if (productsNode.isArray()) {
                     productsNode.forEach(productNode -> {
                         String productId = productNode.path("id").asText();
-                        JsonNode actionNode = productNode.path("action");
+                        JsonNode actionNode = productNode.path("actions");
                         if (actionNode.isObject() && "command".equals(actionNode.path("type").asText())) {
                             String command = actionNode.path("command").asText();
                             products.put(productId, command);
+                            getLogger().info(products.toString());
                         }
                     });
                 }
