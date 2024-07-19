@@ -2,6 +2,8 @@ package pl.fvst.itemshop.task;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -10,6 +12,10 @@ import org.apache.http.util.EntityUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.scheduler.BukkitRunnable;
 import pl.fvst.itemshop.config.Config;
+import pl.fvst.itemshop.config.ConfigLoader;
+import pl.fvst.itemshop.data.ResponseJson;
+import pl.fvst.itemshop.data.sub.Action;
+import pl.fvst.itemshop.data.sub.Field;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -18,6 +24,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import static org.bukkit.Bukkit.getLogger;
 
 public class OrderTask extends BukkitRunnable {
+
+    private static final Gson gson = new GsonBuilder()
+            .setPrettyPrinting()
+            .create();
 
     private final Config config;
     private final ConcurrentHashMap<String, String> products;
@@ -55,54 +65,26 @@ public class OrderTask extends BukkitRunnable {
             });
 
             ObjectMapper objectMapper = new ObjectMapper();
-            JsonNode root = objectMapper.readTree(jsonResponse);
-            JsonNode ordersNode = root.path("orders");
 
-            String nickname = "";
-            String command = "";
+            String str = jsonResponse.substring(1, jsonResponse.length() - 1);
+            var duzeJajco = gson.fromJson(str, ResponseJson.class);
 
+            if (!duzeJajco.getStatus().equalsIgnoreCase("paid")) return;
+            for (Action action : duzeJajco.getActions()) {
+                for (Field field : duzeJajco.getFields()) {
+                    Bukkit.getScheduler().runTask(Bukkit.getPluginManager().getPlugin("Fvst-Itemshop"), () -> {
+                            Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(), action.getCommand());
 
-
-            if (ordersNode.isArray()) {
-                for (JsonNode orderNode : root) {
-                    JsonNode fieldsNode = orderNode.path("fields");
-                    for (JsonNode fieldNode : fieldsNode) {
-                        if ("nickname".equals(fieldNode.path("name").asText())) {
-                            nickname = fieldNode.path("value").asText();
-                            break; // Assuming only one nickname per order
-                        }
-                    }
-                    String productId = orderNode.path("productId").asText();
-
-                    // Extracting command from actions
-                    JsonNode actionsNode = orderNode.path("actions");
-                    for (JsonNode actionNode : actionsNode) {
-                        if ("command".equals(actionNode.path("type").asText())) {
-                            command = actionNode.path("command").asText();
-                            break; // Assuming only one command per order
-                        }
-                    }
-
-
-
-                    if (command != null) {
-                        try {
-                            Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(), command);
-
-                            String completedUrl = "https://api.fvst.pl/shops/" + config.getShopIdentifier() + "/orders/" + config.getServerIdentifier() + "/completed";
-                            HttpPost httpPost = new HttpPost(completedUrl);
-                            getLogger().info("Executing command for product ID " + productId + ": " + command);
-                        } catch (Exception e) {
-                            getLogger().warning("Error executing command for product ID " + productId + ": " + e.getMessage());
-                        }
-                    } else {
-                        getLogger().warning("No command found for product ID " + productId);
-                    }
+                    });
+                    System.out.println("japierdole praca w fvst to nie przyjemnosc tylko katorga zabicjei mnie prosze<3");
                 }
             }
 
+            duzeJajco.setDelivered(true);
+
+            //odeslac trzeba req
         } catch (Exception e) {
-            getLogger().warning("Error fetching orders: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }
