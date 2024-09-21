@@ -29,16 +29,20 @@ Instrukcje dotyczące instalacji pluginu na serwerze Minecraft.
 Opis konfiguracji pluginu. Przykład:
 
 1. Po pierwszym uruchomieniu pluginu, znajdziesz plik konfiguracyjny w folderze `plugins/Fvst-Itemshop/config.json`.
-2. Otwórz plik `config.json` i dostosuj ustawienia do swoich potrzeb. Przykład konfiguracji:
+2. Otwórz plik `config.yml` i dostosuj ustawienia do swoich potrzeb. Przykład konfiguracji:
 
 
-```json
-{
-    "debug": true,
-    "serverIdentifier": "611e-9e73-b9ee541451b5",
-    "shopIdentifier": "3c7dc8-9a8f-a3b22ee1803f",
-    "apiKey": "Ny4xNzIxMDQTc1Lm5iYw=="
-}
+```yml
+debug: true
+shopId: '3c7dc8-9a8f-a3b22ee1803f'
+serverId: '611e-9e73-b9ee541451b5'
+apiKey: 'Ny4xNzIxMDQTc1Lm5iYw=='
+
+boughtMessage:
+  - '&lGRACZ &0&l%player%&r&l ZAKUPIŁ'
+  - ''
+  - '  &0&l%item%'
+  - ''
 ```
 
 ## Dokumentacja 📚
