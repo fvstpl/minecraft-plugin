@@ -20,15 +20,6 @@ jobs:
         distribution: 'temurin'
         cache: maven
 
-    - name: Install local JSON dependency
-      run: mvn install:install-file -Dfile=lib/json-20240303.jar -DgroupId=org.json -DartifactId=json -Dversion=20230516 -Dpackaging=jar
-
-    - name: List Maven local repository
-      run: ls ~/.m2/repository/org/json/json/20230516/
-
-    - name: Clean Maven repository
-      run: mvn clean
-
     - name: Build with Maven
       run: mvn -B package --file pom.xml -X
 
