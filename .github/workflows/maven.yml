@@ -26,8 +26,11 @@ jobs:
     - name: List Maven local repository
       run: ls ~/.m2/repository/org/json/json/20230516/
 
+    - name: Clean Maven repository
+      run: mvn clean
+
     - name: Build with Maven
-      run: mvn -B package --file pom.xml
+      run: mvn -B package --file pom.xml -X
 
     - name: Update dependency graph
       uses: advanced-security/maven-dependency-submission-action@571e99aab1055c2e71a1e2309b9691de18d6b7d6
