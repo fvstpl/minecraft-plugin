@@ -28,7 +28,7 @@ Instrukcje dotyczące instalacji pluginu na serwerze Minecraft.
 
 Opis konfiguracji pluginu. Przykład:
 
-1. Po pierwszym uruchomieniu pluginu, znajdziesz plik konfiguracyjny w folderze `plugins/Fvst-Itemshop/config.json`.
+1. Po pierwszym uruchomieniu pluginu, znajdziesz plik konfiguracyjny w folderze `plugins/FVST`.
 2. Otwórz plik `config.yml` i dostosuj ustawienia do swoich potrzeb. Przykład konfiguracji:
 
 
