@@ -1,5 +1,9 @@
 package dev.xkotelek;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -9,26 +13,19 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.List;
 
 public class PurchaseManager {
 
-    // FVST Minecraft Plugin 1.0
-    // by xKotelek @ https://kotelek.dev
-    // https://github.com/fvstpl/minecraft-plugin/
-
     private static final FVST fvst = (FVST) Bukkit.getPluginManager().getPlugin("FVST");
-
     private static boolean debug = fvst.getConfig().getBoolean("debug");
     private static String shopId = fvst.getConfig().getString("shopId");
     private static String serverId = fvst.getConfig().getString("serverId");
     private static String apiKey = fvst.getConfig().getString("apiKey");
     private static List<String> boughtMessages = fvst.getConfig().getStringList("boughtMessage");
+    private static Gson gson = new Gson();
 
     public static boolean checkConfigValues() {
         if (shopId == null || shopId.isEmpty() || serverId == null || serverId.isEmpty() || apiKey == null || apiKey.isEmpty()) {
@@ -48,134 +45,87 @@ public class PurchaseManager {
 
         try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
             String url = "http://zkww0skckco0ko8gsg4ckww4.207.127.94.150.sslip.io/shops/" + shopId + "/orders?serverId=" + serverId + "&delivered=false";
-//            String url = "https://api.fvst.pl/shops/" + shopId + "/orders?serverId=" + serverId + "&delivered=false";
             HttpGet httpget = new HttpGet(url);
-
             httpget.addHeader("x-api-key", apiKey);
-
-            org.apache.http.HttpResponse response = httpclient.execute(httpget);
-            HttpEntity entity = response.getEntity();
+            HttpEntity entity = httpclient.execute(httpget).getEntity();
 
             if (entity != null) {
                 String result = EntityUtils.toString(entity);
+                JsonArray jsonArray = gson.fromJson(result, JsonArray.class);
 
-                if (isJSONArray(result)) {
-                    JSONArray jsonArray = new JSONArray(result);
+                for (JsonElement element : jsonArray) {
+                    JsonObject order = element.getAsJsonObject();
+                    String orderId = order.get("id").getAsString();
+                    String playerName = "nieznany gracz";
 
-                    for (int i = 0; i < jsonArray.length(); i++) {
-                        JSONObject order = jsonArray.getJSONObject(i);
-
-                        String orderId = order.getString("id");
-                        String playerName = "nieznany gracz";
-                        JSONArray fields = order.getJSONArray("fields");
-                        for (int j = 0; j < fields.length(); j++) {
-                            JSONObject field = fields.getJSONObject(j);
-                            if (field.getString("name").equalsIgnoreCase("nickname")) {
-                                playerName = field.getString("value");
-                                break;
-                            }
-                        }
-
-                        String itemName = "nieznany przedmiot";
-                        if (order.has("productName")) {
-                            itemName = order.getString("productName");
-                        }
-
-                        String command = "NONE";
-                        JSONArray actions = order.getJSONArray("actions");
-                        for (int k = 0; k < actions.length(); k++) {
-                            JSONObject action = actions.getJSONObject(k);
-                            if (action.getString("type").equalsIgnoreCase("command")) {
-                                command = action.getString("command");
-
-                                if (command.contains("{{player}}")) {
-                                    command = command.replace("{{player}}", playerName);
-                                }
-                                break;
-                            }
-                        }
-
-                        if (debug) {
-                            System.out.println("[FVST] Order " + i + " - Player: " + playerName + ", Item: " + itemName + ", Command: " + command);
-                        }
-
-                        String markAsDeliveredUrl = "http://zkww0skckco0ko8gsg4ckww4.207.127.94.150.sslip.io/shops/" + shopId + "/orders/" + orderId + "/complete";
-//                        String markAsDeliveredUrl = "https://api.fvst.pl/shops/" + shopId + "/orders/" + orderId + "/complete";
-
-                        JSONObject jsonBody = new JSONObject();
-                        jsonBody.put("delivered", true);
-
-                        HttpPost httppost = new HttpPost(markAsDeliveredUrl);
-                        httppost.addHeader("x-api-key", apiKey);
-                        httppost.addHeader("Content-Type", "application/json");
-                        httppost.setEntity(new StringEntity(jsonBody.toString()));
-
-                        org.apache.http.HttpResponse postResponse = httpclient.execute(httppost);
-                        HttpEntity postEntity = postResponse.getEntity();
-
-                        if (postEntity != null) {
-                            String postResult = EntityUtils.toString(postEntity);
-
-                            if (isJSONObject(postResult)) {
-                                JSONObject jsonResponse = new JSONObject(postResult);
-                                if (jsonResponse.has("message")) {
-                                    String message = jsonResponse.getString("message");
-                                    if (message == "Order completed" && debug) {
-                                        System.out.println("[FVST] Order with id " + orderId + " has been completed.");
-                                    }
-                                }
-                            } else if(debug) {
-                                System.out.println("[FVST] Mark as delivered response: " + postResult);
-                            }
-                        }
-
-                        for (String message : boughtMessages) {
-                            if (message != null && !message.isEmpty()) {
-                                message = message.replace("%player%", playerName).replace("%item%", itemName);
-                                message = ChatColor.translateAlternateColorCodes('&', message);
-                                Bukkit.broadcastMessage(message);
-                            } else {
-                                Bukkit.broadcastMessage("");
-                            }
+                    JsonArray fields = order.getAsJsonArray("fields");
+                    for (JsonElement fieldElement : fields) {
+                        JsonObject field = fieldElement.getAsJsonObject();
+                        if (field.get("name").getAsString().equalsIgnoreCase("nickname")) {
+                            playerName = field.get("value").getAsString();
+                            break;
                         }
                     }
-                    return;
-                } else if (isJSONObject(result)) {
-                    JSONObject jsonResponse = new JSONObject(result);
-                    if (jsonResponse.has("message")) {
-                        String message = jsonResponse.getString("message");
-                        if(debug) {
-                            System.out.println("[FVST] " + message);
+
+                    String itemName = order.has("productName") ? order.get("productName").getAsString() : "nieznany przedmiot";
+                    String command = "NONE";
+
+                    JsonArray actions = order.getAsJsonArray("actions");
+                    for (JsonElement actionElement : actions) {
+                        JsonObject action = actionElement.getAsJsonObject();
+                        if (action.get("type").getAsString().equalsIgnoreCase("command")) {
+                            command = action.get("command").getAsString().replace("{{player}}", playerName);
+                            break;
                         }
-                        return;
                     }
-                } else {
-                    if(debug) {
-                        System.out.println("[FVST] Response is not a valid JSON.");
+
+                    if (debug) {
+                        System.out.println("[FVST] Order - Player: " + playerName + ", Item: " + itemName + ", Command: " + command);
                     }
-                    return;
+
+                    markAsDelivered(orderId);
+                    broadcastMessages(playerName, itemName);
                 }
             }
-        } catch (IOException | JSONException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private static boolean isJSONObject(String response) {
-        try {
-            new JSONObject(response);
-            return true;
-        } catch (JSONException e) {
-            return false;
+    private static void markAsDelivered(String orderId) {
+        String markAsDeliveredUrl = "http://zkww0skckco0ko8gsg4ckww4.207.127.94.150.sslip.io/shops/" + shopId + "/orders/" + orderId + "/complete";
+        JsonObject jsonBody = new JsonObject();
+        jsonBody.addProperty("delivered", true);
+
+        try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
+            HttpPost httppost = new HttpPost(markAsDeliveredUrl);
+            httppost.addHeader("x-api-key", apiKey);
+            httppost.addHeader("Content-Type", "application/json");
+            httppost.setEntity(new StringEntity(gson.toJson(jsonBody)));
+
+            HttpEntity postEntity = httpclient.execute(httppost).getEntity();
+            if (postEntity != null) {
+                String postResult = EntityUtils.toString(postEntity);
+                JsonObject jsonResponse = gson.fromJson(postResult, JsonObject.class);
+                if (jsonResponse.has("message")) {
+                    String message = jsonResponse.get("message").getAsString();
+                    if ("Order completed".equals(message) && debug) {
+                        System.out.println("[FVST] Order with id " + orderId + " has been completed.");
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
-    private static boolean isJSONArray(String response) {
-        try {
-            new JSONArray(response);
-            return true;
-        } catch (JSONException e) {
-            return false;
+    private static void broadcastMessages(String playerName, String itemName) {
+        for (String message : boughtMessages) {
+            if (message != null && !message.isEmpty()) {
+                message = message.replace("%player%", playerName).replace("%item%", itemName);
+                message = ChatColor.translateAlternateColorCodes('&', message);
+                Bukkit.broadcastMessage(message);
+            }
         }
     }
 }
