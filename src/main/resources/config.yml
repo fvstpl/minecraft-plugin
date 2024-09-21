@@ -1,0 +1,14 @@
+# FVST Configuration @ https://github.com/fvstpl/minecraft-plugin/
+# by xKotelek        @ https://kotelek.dev
+
+debug: false
+shopId: ''
+serverId: ''
+apiKey: ''
+
+# Use %item% for item name and %player% for player name.
+boughtMessage:
+  - '&lGRACZ &0&l%player%&r&l ZAKUPIŁ'
+  - ''
+  - '  &0&l%item%'
+  - ''

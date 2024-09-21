@@ -1,0 +1,14 @@
+name: FVST
+version: '1.0'
+main: dev.xkotelek.FVST
+api-version: '1.21'
+commands:
+  fvst:
+    description: FVST command.
+    usage: /fvst <reload|help>
+    permission: ""
+    permission-message: You don't have permissions to use that command!
+permissions:
+  fvst.reload:
+    description: Allows to reload config.
+    default: op
