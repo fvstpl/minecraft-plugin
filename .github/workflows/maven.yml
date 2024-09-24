@@ -52,6 +52,7 @@ jobs:
           else
             echo "No existing release found for v${{ env.VERSION }}"
             echo "RELEASE_EXISTS=false" >> $GITHUB_ENV
+          fi
 
       # Step 6: Create a new release only if it doesn't exist
       - name: Create GitHub Release
