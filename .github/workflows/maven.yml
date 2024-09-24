@@ -67,7 +67,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url || format('https://uploads.github.com/repos/{owner}/{repo}/releases/{release_id}/assets?name={name}', owner=github.repository_owner, repo=github.event.repository.name, release_id=steps.release_check.outputs.release_url) }}
+          upload_url: ${{ env.RELEASE_EXISTS == 'true' && env.RELEASE_URL || steps.create_release.outputs.upload_url }}
           asset_path: target/FVST-${{ env.VERSION }}.jar
           asset_name: FVST-${{ env.VERSION }}.jar
           asset_content_type: application/java-archive
