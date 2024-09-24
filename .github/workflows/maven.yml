@@ -45,10 +45,11 @@ jobs:
           RELEASE_URL=$(curl -s \
             -H "Authorization: token $GITHUB_TOKEN" \
             https://api.github.com/repos/${{ github.repository }}/releases/tags/v${{ env.VERSION }} \
-            | jq -r '.url')
+            | jq -r '.upload_url')
           if [ "$RELEASE_URL" != "null" ]; then
             echo "Release already exists at $RELEASE_URL"
             echo "RELEASE_EXISTS=true" >> $GITHUB_ENV
+            echo "UPLOAD_URL=$RELEASE_URL" >> $GITHUB_ENV
           else
             echo "No existing release found for v${{ env.VERSION }}"
             echo "RELEASE_EXISTS=false" >> $GITHUB_ENV
@@ -62,10 +63,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v${{ env.VERSION }}  # Tag from pom.xml version
+          tag_name: v${{ env.VERSION }} 
           release_name: Release v${{ env.VERSION }}
           draft: false
           prerelease: false
+        # Capture the new release upload URL if it was created
+        run: echo "UPLOAD_URL=${{ steps.create_release.outputs.upload_url }}" >> $GITHUB_ENV
 
       # Step 7: Upload the built FVST.jar to the release
       - name: Upload FVST.jar to release
@@ -73,7 +76,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url || steps.release_check.outputs.upload_url }}
-          asset_path: target/FVST.jar  # Update path to your JAR if necessary
+          upload_url: ${{ env.UPLOAD_URL }}
+          asset_path: target/FVST.jar
           asset_name: FVST.jar
           asset_content_type: application/java-archive
