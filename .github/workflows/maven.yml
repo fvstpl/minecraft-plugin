@@ -35,7 +35,7 @@ jobs:
         run: |
           VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-      
+
       # Step 5: Check if the release already exists
       - name: Check if release exists
         id: release_check
@@ -50,10 +50,10 @@ jobs:
             echo "Release already exists at $RELEASE_URL"
             echo "RELEASE_EXISTS=true" >> $GITHUB_ENV
           else
-            echo "No existing release found for v${{ env.VERSION }}"
+            echo "No existing release found for v${{ env.VERSION }}."
             echo "RELEASE_EXISTS=false" >> $GITHUB_ENV
           fi
-      
+
       # Step 6: Create a new release only if it doesn't exist
       - name: Create GitHub Release
         id: create_release
@@ -69,11 +69,12 @@ jobs:
 
       # Step 7: Upload the built FVST.jar to the release
       - name: Upload FVST.jar to release
+        if: env.RELEASE_EXISTS == 'false'  # Only upload if the release was created
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: target/FVST.jar  # Update path to your JAR if necessary
-          asset_name: FVST.jar
+          asset_path: target/FVST-${{ env.VERSION }}.jar  # Use the correct JAR filename
+          asset_name: FVST-${{ env.VERSION }}.jar
           asset_content_type: application/java-archive
