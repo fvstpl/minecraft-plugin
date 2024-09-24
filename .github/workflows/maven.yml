@@ -67,10 +67,13 @@ jobs:
           release_name: Release v${{ env.VERSION }}
           draft: false
           prerelease: false
-        # Capture the new release upload URL if it was created
+
+      # Step 7: Capture the new release upload URL if a new release was created
+      - name: Capture Upload URL
+        if: env.RELEASE_EXISTS == 'false'
         run: echo "UPLOAD_URL=${{ steps.create_release.outputs.upload_url }}" >> $GITHUB_ENV
 
-      # Step 7: Upload the built FVST.jar to the release
+      # Step 8: Upload the built FVST.jar to the release
       - name: Upload FVST.jar to release
         uses: actions/upload-release-asset@v1
         env:
