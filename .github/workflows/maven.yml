@@ -14,10 +14,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the code
       - uses: actions/checkout@v4
 
-      # Step 2: Set up JDK 22
       - name: Set up JDK 22
         uses: actions/setup-java@v4
         with:
@@ -25,18 +23,15 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # Step 3: Build with Maven
       - name: Build with Maven
         run: mvn -B package --file pom.xml
 
-      # Step 4: Extract version from pom.xml
       - name: Get version from pom.xml
         id: get_version
         run: |
           VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-      # Step 5: Check if the release already exists
       - name: Check if release exists
         id: release_check
         env:
@@ -49,12 +44,12 @@ jobs:
           if [ "$RELEASE_URL" != "null" ]; then
             echo "Release already exists at $RELEASE_URL"
             echo "RELEASE_EXISTS=true" >> $GITHUB_ENV
+            echo "RELEASE_URL=$RELEASE_URL" >> $GITHUB_ENV
           else
             echo "No existing release found for v${{ env.VERSION }}."
             echo "RELEASE_EXISTS=false" >> $GITHUB_ENV
           fi
 
-      # Step 6: Create a new release only if it doesn't exist
       - name: Create GitHub Release
         id: create_release
         if: env.RELEASE_EXISTS == 'false'
@@ -62,19 +57,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v${{ env.VERSION }}  # Tag from pom.xml version
+          tag_name: v${{ env.VERSION }}
           release_name: Release v${{ env.VERSION }}
           draft: false
           prerelease: false
 
-      # Step 7: Upload the built FVST.jar to the release
       - name: Upload FVST.jar to release
-        if: env.RELEASE_EXISTS == 'false'  # Only upload if the release was created
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: target/FVST-${{ env.VERSION }}.jar  # Use the correct JAR filename
+          upload_url: ${{ steps.create_release.outputs.upload_url || env.RELEASE_URL }}
+          asset_path: target/FVST-${{ env.VERSION }}.jar
           asset_name: FVST-${{ env.VERSION }}.jar
           asset_content_type: application/java-archive
